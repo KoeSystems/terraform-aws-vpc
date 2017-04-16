@@ -1,0 +1,1 @@
+output "cidr_block" { value = "${aws_vpc.mod.cidr_block}" }
