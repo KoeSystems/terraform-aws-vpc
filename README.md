@@ -41,6 +41,15 @@ module "vpc" {
 }
 ```
 
+Enable IPv6
+```js
+module "vpc" {
+  source  = "github.com/KoeSystems/tf_aws_vpc"
+  name    = "vpc01"
+  ipv6_cidr_block = true
+}
+```
+
 Outputs
 =======
 

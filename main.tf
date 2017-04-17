@@ -47,6 +47,10 @@ resource "aws_internet_gateway" "mod" {
   }
 }
 
+resource "aws_egress_only_internet_gateway" "mod" {
+  vpc_id = "${aws_vpc.mod.id}"
+  count  = "${var.ipv6_cidr_block ? 1 : 0}"
+}
 ################################################################################
 # NAT Gateway
 ################################################################################
@@ -135,6 +139,13 @@ resource "aws_route" "private" {
   count                  = "${var.AZs}"
 }
 
+resource "aws_route" "private_ipv6" {
+  route_table_id              = "${element(aws_route_table.private.*.id, count.index)}"
+  destination_ipv6_cidr_block = "::/0"
+  egress_only_gateway_id      = "${aws_egress_only_internet_gateway.mod.id}"
+  count                       = "${ var.AZs * (var.ipv6_cidr_block ? 1 : 0) }"
+}
+
 resource "aws_default_route_table" "default" {
   default_route_table_id = "${aws_vpc.mod.default_route_table_id}"
   tags {
@@ -164,6 +175,18 @@ resource "aws_network_acl_rule" "public_ingress" {
   to_port        = 0
 }
 
+resource "aws_network_acl_rule" "public_ingress_ipv6" {
+  network_acl_id = "${aws_network_acl.public.id}"
+  rule_number     = 101
+  egress          = false
+  protocol        = "-1"
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+  from_port       = 0
+  to_port         = 0
+  count           = "${var.ipv6_cidr_block ? 1 : 0 }"
+}
+
 resource "aws_network_acl_rule" "public_egress" {
   network_acl_id = "${aws_network_acl.public.id}"
   rule_number    = 100
@@ -173,6 +196,18 @@ resource "aws_network_acl_rule" "public_egress" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
+}
+
+resource "aws_network_acl_rule" "public_egress_ipv6" {
+  network_acl_id  = "${aws_network_acl.public.id}"
+  rule_number     = 101
+  egress          = true
+  protocol        = "-1"
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+  from_port       = 0
+  to_port         = 0
+  count           = "${var.ipv6_cidr_block ? 1 : 0 }"
 }
 
 resource "aws_network_acl" "private" {
@@ -195,6 +230,18 @@ resource "aws_network_acl_rule" "private_ingress" {
   to_port        = 0
 }
 
+resource "aws_network_acl_rule" "private_ingress_ipv6" {
+  network_acl_id = "${aws_network_acl.private.id}"
+  rule_number     = 101
+  egress          = false
+  protocol        = "-1"
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+  from_port       = 0
+  to_port         = 0
+  count           = "${var.ipv6_cidr_block ? 1 : 0 }"
+}
+
 resource "aws_network_acl_rule" "private_egress" {
   network_acl_id = "${aws_network_acl.private.id}"
   rule_number    = 100
@@ -204,6 +251,18 @@ resource "aws_network_acl_rule" "private_egress" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
+}
+
+resource "aws_network_acl_rule" "private_egress_ipv6" {
+  network_acl_id  = "${aws_network_acl.private.id}"
+  rule_number     = 101
+  egress          = true
+  protocol        = "-1"
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+  from_port       = 0
+  to_port         = 0
+  count           = "${var.ipv6_cidr_block ? 1 : 0 }"
 }
 
 resource "aws_default_network_acl" "default" {
