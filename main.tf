@@ -135,6 +135,12 @@ resource "aws_route" "private" {
   count                  = "${var.AZs}"
 }
 
+resource "aws_default_route_table" "default" {
+  default_route_table_id = "${aws_vpc.mod.default_route_table_id}"
+  tags {
+    Name = "Default RTB - EMPTY"
+  }
+}
 ################################################################################
 # Network ACL
 ################################################################################
@@ -198,4 +204,50 @@ resource "aws_network_acl_rule" "private_egress" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
+}
+
+resource "aws_default_network_acl" "default" {
+  default_network_acl_id = "${aws_vpc.mod.default_network_acl_id}"
+  tags {
+    Name = "Default ACL - DENY ALL"
+  }
+}
+################################################################################
+# Default Security Group
+################################################################################
+resource "aws_default_security_group" "default" {
+  vpc_id = "${aws_vpc.mod.id}"
+  tags {
+    Name = "Default SG - DENY ALL"
+  }
+}
+
+################################################################################
+# FLow Logs
+################################################################################
+resource "aws_cloudwatch_log_group" "vpc" {
+  name = "/aws/vpc/${var.name}-flow-logs"
+  retention_in_days = 30
+  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+}
+
+resource "aws_iam_role" "flow_logs" {
+  name               = "AmazonVPCFlowLogs"
+  assume_role_policy = "${file("${path.module}/policies/vpc-flow-logs-assume-policy.json")}"
+  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+}
+
+resource "aws_iam_role_policy" "AmazonVPCFlowLogs" {
+  name   = "AmazonVPCFlowLogs"
+  role   = "${aws_iam_role.flow_logs.id}"
+  policy = "${file("${path.module}/policies/vpc-flow-logs-policy.json")}"
+  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+}
+
+resource "aws_flow_log" "mod" {
+  vpc_id         = "${aws_vpc.mod.id}"
+  log_group_name = "${aws_cloudwatch_log_group.vpc.name}"
+  iam_role_arn   = "${aws_iam_role.flow_logs.arn}"
+  traffic_type   = "ALL"
+  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
 }
