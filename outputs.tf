@@ -14,3 +14,4 @@ output "rtb_public_ids"             { value = "${join(",", aws_route_table.publi
 output "route_private_rtb_ids"      { value = "${join(",", aws_route_table.private.*.route_table_id) }" }
 output "route_public_rtb_ids"       { value = "${join(",", aws_route_table.public.*.route_table_id) }" }
 output "secondary_public_zone_id"   { value = "${aws_route53_zone.secondary_public.zone_id}" }
+output "secondary_private_zone_id"  { value = "${aws_route53_zone.secondary_private.zone_id}" }
