@@ -1,3 +1,4 @@
+output "vpc_id"                     { value = "${aws_vpc.mod.id}" }
 output "ipv4_cidr_block"            { value = "${aws_vpc.mod.cidr_block}" }
 output "ipv6_cidr_block"            { value = "${aws_vpc.mod.ipv6_cidr_block }" }
 output "domain_name"                { value = "${var.domain_name}" }
@@ -12,3 +13,4 @@ output "rtb_private_ids"            { value = "${join(",", aws_route_table.priva
 output "rtb_public_ids"             { value = "${join(",", aws_route_table.public.*.id) }" }
 output "route_private_rtb_ids"      { value = "${join(",", aws_route_table.private.*.route_table_id) }" }
 output "route_public_rtb_ids"       { value = "${join(",", aws_route_table.public.*.route_table_id) }" }
+output "secondary_public_zone_id"   { value = "${aws_route53_zone.secondary_public.zone_id}" }

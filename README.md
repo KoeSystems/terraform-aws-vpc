@@ -67,12 +67,14 @@ Outputs
 - `rtb_public_ids`
 - `route_private_rtb_ids`
 - `route_public_rtb_ids`
+- `secondary_public_zone_id`
 
 Costs
 =====
 
 The terraform module will create a NAT Gateway for each AZs (by default = 3), you can reduce costs by reducing the number of AZs.
 Also terraform will configure VPC Flow Logs by default to be able to trace all the network traffic within the VPC, this will generate some costs in AWS CloudWatch Logs.
+Two Route53 will be created, one public and another private attached to the VPC.
  
 Authors
 =======

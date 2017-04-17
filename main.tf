@@ -2,6 +2,13 @@
 # DATA
 ################################################################################
 data "aws_availability_zones" "available" {}
+data "aws_region" "current" {
+  current = true
+}
+data "aws_route53_zone" "public" {
+  name         = "${var.domain_name}"
+  private_zone = false
+}
 
 ################################################################################
 # VPC
@@ -23,7 +30,7 @@ resource "aws_vpc" "mod" {
 # DHCP Options
 ################################################################################
 resource "aws_vpc_dhcp_options" "mod" {
-  domain_name         = "${var.domain_name}"
+  domain_name         = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
   domain_name_servers = "${var.domain_name_servers}"
   
   tags {
@@ -309,4 +316,32 @@ resource "aws_flow_log" "mod" {
   iam_role_arn   = "${aws_iam_role.flow_logs.arn}"
   traffic_type   = "ALL"
   count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+}
+
+################################################################################
+# Route53 Private Hosted Zone
+################################################################################
+resource "aws_route53_zone" "secondary_private" {
+  comment           = "Private zone for ${var.domain_name} in ${data.aws_region.current.name}"
+  name              = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
+  vpc_id            = "${aws_vpc.mod.id}"
+}
+
+resource "aws_route53_zone" "secondary_public" {
+  comment = "Public zone for ${var.domain_name} in ${data.aws_region.current.name}"
+  name    = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
+}
+
+resource "aws_route53_record" "NS" {
+  zone_id = "${data.aws_route53_zone.public.zone_id}"
+  name    = "${element(aws_route53_zone.secondary_public.*.name, count.index)}.${data.aws_region.current.name}"
+  type    = "NS"
+  ttl     = "30"
+  records = [
+    "${element(aws_route53_zone.secondary_public.*.name_servers.0,count.index)}",
+    "${element(aws_route53_zone.secondary_public.*.name_servers.1,count.index)}",
+    "${element(aws_route53_zone.secondary_public.*.name_servers.2,count.index)}",
+    "${element(aws_route53_zone.secondary_public.*.name_servers.3,count.index)}"
+  ]
+  depends_on = [ "aws_route53_zone.secondary_public" ]
 }
