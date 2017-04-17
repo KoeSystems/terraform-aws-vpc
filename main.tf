@@ -72,7 +72,7 @@ resource "aws_subnet" "public" {
   count                   = "${var.AZs}"
 
   tags {
-    Name = "public-${substr(element(sort(data.aws_availability_zones.available.names), count.index),9,1)}"
+    Name = "public-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
   }
 }
 
@@ -84,7 +84,7 @@ resource "aws_subnet" "private" {
   count                   = "${var.AZs}"
 
   tags {
-    Name = "private-${substr(element(sort(data.aws_availability_zones.available.names), count.index),9,1)}"
+    Name = "private-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
   }
 }
 
@@ -96,7 +96,7 @@ resource "aws_route_table" "public" {
   count  = "${var.AZs}"
   
   tags {
-    Name = "public-${substr(element(data.aws_availability_zones.available.names, count.index),9,1)}"
+    Name = "public-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
   }
 }
 
@@ -118,7 +118,7 @@ resource "aws_route_table" "private" {
   count  = "${var.AZs}"
   
   tags {
-    Name = "private-${substr(element(data.aws_availability_zones.available.names, count.index),9,1)}"
+    Name = "private-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
   }
 }
 
