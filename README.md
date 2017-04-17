@@ -44,7 +44,20 @@ module "vpc" {
 Outputs
 =======
 
- - `public_ip` - comma separated list of public IPs allocated
+- `ipv4_cidr_block`
+- `ipv6_cidr_block`
+- `domain_name`
+- `nat_ids`
+- `nat_private_ips`
+- `nat_public_ips`
+- `subnets_private_ids`
+- `subnets_private_cidr_block`
+- `subnets_public_ids`
+- `subnets_public_cidr_block`
+- `rtb_private_ids`
+- `rtb_public_ids`
+- `route_private_rtb_ids`
+- `route_public_rtb_ids`
 
 Costs
 =====
