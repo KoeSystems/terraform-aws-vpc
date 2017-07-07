@@ -62,14 +62,14 @@ resource "aws_egress_only_internet_gateway" "mod" {
 # NAT Gateway
 ################################################################################
 resource "aws_eip" "mod" {
-  vpc  = true
-  count = "${var.AZs}"
+  vpc   = true
+  count = "${var.enable_nat_gw ? var.AZs : 0}"
 }
 
 resource "aws_nat_gateway" "mod" {
   allocation_id = "${element(aws_eip.mod.*.id, count.index)}"
   subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
-  count         = "${var.AZs}"
+  count         = "${var.enable_nat_gw ? var.AZs : 0}"
 }
 
 ################################################################################
@@ -143,7 +143,7 @@ resource "aws_route" "private" {
   route_table_id         = "${element(aws_route_table.private.*.id, count.index)}"
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = "${element(aws_nat_gateway.mod.*.id, count.index)}"
-  count                  = "${var.AZs}"
+  count                  = "${var.enable_nat_gw ? var.AZs : 0}"
 }
 
 resource "aws_route" "private_ipv6" {
@@ -322,9 +322,9 @@ resource "aws_flow_log" "mod" {
 # Route53 Private Hosted Zone
 ################################################################################
 resource "aws_route53_zone" "secondary_private" {
-  comment           = "Private zone for ${var.domain_name} in ${data.aws_region.current.name}"
-  name              = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
-  vpc_id            = "${aws_vpc.mod.id}"
+  comment = "Private zone for ${var.domain_name} in ${data.aws_region.current.name}"
+  name    = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
+  vpc_id  = "${aws_vpc.mod.id}"
 }
 
 resource "aws_route53_zone" "secondary_public" {
@@ -334,14 +334,15 @@ resource "aws_route53_zone" "secondary_public" {
 
 resource "aws_route53_record" "NS" {
   zone_id = "${data.aws_route53_zone.public.zone_id}"
-  name    = "${element(aws_route53_zone.secondary_public.*.name, count.index)}.${data.aws_region.current.name}"
+  #name    = "${element(aws_route53_zone.secondary_public.*.name, 0)}.${data.aws_region.current.name}"
+  name    = "${element(aws_route53_zone.secondary_public.*.name, 0)}"
   type    = "NS"
   ttl     = "30"
   records = [
-    "${element(aws_route53_zone.secondary_public.*.name_servers.0,count.index)}",
-    "${element(aws_route53_zone.secondary_public.*.name_servers.1,count.index)}",
-    "${element(aws_route53_zone.secondary_public.*.name_servers.2,count.index)}",
-    "${element(aws_route53_zone.secondary_public.*.name_servers.3,count.index)}"
+    "${aws_route53_zone.secondary_public.name_servers.0}",
+    "${aws_route53_zone.secondary_public.name_servers.1}",
+    "${aws_route53_zone.secondary_public.name_servers.2}",
+    "${aws_route53_zone.secondary_public.name_servers.3}"
   ]
   depends_on = [ "aws_route53_zone.secondary_public" ]
 }

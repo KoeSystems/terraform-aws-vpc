@@ -8,3 +8,4 @@ variable "ipv6_cidr_block"      { default = false }
 variable "domain_name_servers"  { default = [ "AmazonProvidedDNS" ] }
 variable "AZs"                  { default = 3 }
 variable "enable_vpc_flow_logs" { default = false }
+variable "enable_nat_gw"        { default = true }
