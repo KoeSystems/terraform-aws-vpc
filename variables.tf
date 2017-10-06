@@ -1,5 +1,5 @@
 variable "name"                 { }
-variable "domain_name"          { default = "" }
+variable "domain_name"          { }
 variable "cidr_block"           { default = "10.0.0.0/16"}
 variable "tenancy"              { default = "default" }
 variable "enable_dns_support"   { default = true }
