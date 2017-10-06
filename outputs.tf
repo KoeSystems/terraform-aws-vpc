@@ -1,4 +1,5 @@
 output "vpc_id"                     { value = "${aws_vpc.mod.id}" }
+output "vpc_name"                   { value = "${var.name}" }
 output "ipv4_cidr_block"            { value = "${aws_vpc.mod.cidr_block}" }
 output "ipv6_cidr_block"            { value = "${aws_vpc.mod.ipv6_cidr_block }" }
 output "domain_name"                { value = "${var.domain_name}" }
