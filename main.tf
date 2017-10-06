@@ -1,10 +1,8 @@
 ################################################################################
-# DATA
+# Data
 ################################################################################
 data "aws_availability_zones" "available" {}
-data "aws_region" "current" {
-  current = true
-}
+data "aws_region" "current" { current = true }
 data "aws_route53_zone" "public" {
   name         = "${var.domain_name}"
   private_zone = false
@@ -83,7 +81,7 @@ resource "aws_subnet" "public" {
   count                   = "${var.AZs}"
 
   tags {
-    Name = "public-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
+    Name = "${var.name}-public-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
   }
 }
 
@@ -95,7 +93,7 @@ resource "aws_subnet" "private" {
   count                   = "${var.AZs}"
 
   tags {
-    Name = "private-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
+    Name = "${var.name}-private-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
   }
 }
 
@@ -107,7 +105,7 @@ resource "aws_route_table" "public" {
   count  = "${var.AZs}"
   
   tags {
-    Name = "public-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
+    Name = "${var.name}-public-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
   }
 }
 
@@ -129,7 +127,7 @@ resource "aws_route_table" "private" {
   count  = "${var.AZs}"
   
   tags {
-    Name = "private-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
+    Name = "${var.name}-private-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
   }
 }
 
@@ -156,7 +154,7 @@ resource "aws_route" "private_ipv6" {
 resource "aws_default_route_table" "default" {
   default_route_table_id = "${aws_vpc.mod.default_route_table_id}"
   tags {
-    Name = "Default RTB - EMPTY"
+    Name = "${var.name}-default-empty"
   }
 }
 ################################################################################
@@ -167,7 +165,7 @@ resource "aws_network_acl" "public" {
   subnet_ids = [ "${aws_subnet.public.*.id}" ]
 
   tags {
-    Name = "public"
+    Name = "${var.name}-public"
   }
 }
 
@@ -222,7 +220,7 @@ resource "aws_network_acl" "private" {
   subnet_ids = [ "${aws_subnet.private.*.id}" ]
 
   tags {
-    Name = "private"
+    Name = "${var.name}-private"
   }
 }
 
@@ -275,7 +273,7 @@ resource "aws_network_acl_rule" "private_egress_ipv6" {
 resource "aws_default_network_acl" "default" {
   default_network_acl_id = "${aws_vpc.mod.default_network_acl_id}"
   tags {
-    Name = "Default ACL - DENY ALL"
+    Name = "${var.name}-default-deny-all"
   }
 }
 ################################################################################
@@ -284,7 +282,7 @@ resource "aws_default_network_acl" "default" {
 resource "aws_default_security_group" "default" {
   vpc_id = "${aws_vpc.mod.id}"
   tags {
-    Name = "Default SG - DENY ALL"
+    Name = "${var.name}-default-deny-all"
   }
 }
 
@@ -292,22 +290,22 @@ resource "aws_default_security_group" "default" {
 # FLow Logs
 ################################################################################
 resource "aws_cloudwatch_log_group" "vpc" {
-  name = "/aws/vpc/${var.name}-flow-logs"
+  name              = "/aws/vpc/${var.name}-flow-logs"
   retention_in_days = 30
-  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+  count             = "${var.enable_vpc_flow_logs ? 1 : 0}"
 }
 
 resource "aws_iam_role" "flow_logs" {
   name               = "AmazonVPCFlowLogs"
   assume_role_policy = "${file("${path.module}/policies/vpc-flow-logs-assume-policy.json")}"
-  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+  count              = "${var.enable_vpc_flow_logs ? 1 : 0}"
 }
 
 resource "aws_iam_role_policy" "AmazonVPCFlowLogs" {
   name   = "AmazonVPCFlowLogs"
   role   = "${aws_iam_role.flow_logs.id}"
   policy = "${file("${path.module}/policies/vpc-flow-logs-policy.json")}"
-  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+  count  = "${var.enable_vpc_flow_logs ? 1 : 0}"
 }
 
 resource "aws_flow_log" "mod" {
@@ -315,7 +313,7 @@ resource "aws_flow_log" "mod" {
   log_group_name = "${aws_cloudwatch_log_group.vpc.name}"
   iam_role_arn   = "${aws_iam_role.flow_logs.arn}"
   traffic_type   = "ALL"
-  count = "${var.enable_vpc_flow_logs ? 1 : 0}"
+  count          = "${var.enable_vpc_flow_logs ? 1 : 0}"
 }
 
 ################################################################################
@@ -334,7 +332,6 @@ resource "aws_route53_zone" "secondary_public" {
 
 resource "aws_route53_record" "NS" {
   zone_id = "${data.aws_route53_zone.public.zone_id}"
-  #name    = "${element(aws_route53_zone.secondary_public.*.name, 0)}.${data.aws_region.current.name}"
   name    = "${element(aws_route53_zone.secondary_public.*.name, 0)}"
   type    = "NS"
   ttl     = "30"
