@@ -14,20 +14,27 @@ Module Input Variables
 - `name` - AWS VPC name
 - `domain_name` (optional) - Domain Name used in the DHCP options. Will be used to complete unqualified DNS hostnames within the VPC. Default value `""`.
 - `cidr_block` (optional) - VPC CIDR Block. Default value `10.0.0.0/16`.
+- `ipv6_cidr_block` (optional) - Enable IPv6 in the VPC. Default value `false`.
+- `ipv6_private_egress` (optional) - Enable IPv6 Egress Gateway for private subnets. Default value `false`.
 - `tenancy` (optional) - Force the default hardware tenancy of any instance you launch in the VPC. Default value `default`.
 - `enable_dns_support` (optional) - Indicates whether the DNS resolution is supported for the VPC. Default value `true`.
 - `enable_dns_hostnames` (optional) - Indicates whether the instances launched in the VPC get public DNS hostnames. Default value `true`.
-- `ipv6_cidr_block` (optional) - Enable IPv6 in the VPC. Default value `false`.
 - `domain_name_servers` (optional) - DNS servers that will resolve hostnames. Default value `AmazonProvidedDNS`.
 - `AZs` (optional) - Number of AWS AZs to be used (a,b,c,d,e).
 - `enable_vpc_flow_logs` - Enable AWS VPC Flow Logs for this VPC. Default value `false`.
+- `enable_nat_gw` - Create one NAT Gateway for each AZs. Default value `true`.
+- `allow_all_ACL` - Add generic ACL rules to allow ALL traffic.
+
+Caveats
+----------------------
+Adding IPv6 support to an already existing VPC with only IPv4 is not supported. You will have to destroy it and create a new VPC.
 
 Usage examples
 -----
 
 ```js
 module "vpc" {
-  source  = "github.com/KoeSystems/tf_aws_vpc"
+  source  = "github.com/KoeSystems/terraform-aws-vpc?ref=v0.1.1"
   name    = "vpc01"
 }
 ```
@@ -35,7 +42,7 @@ module "vpc" {
 Enable VPC Flow Logs
 ```js
 module "vpc" {
-  source  = "github.com/KoeSystems/tf_aws_vpc"
+  source  = "github.com/KoeSystems/terraform-aws-vpc"
   name    = "vpc01"
   vpc_flow_logs = true
 }
@@ -44,30 +51,11 @@ module "vpc" {
 Enable IPv6
 ```js
 module "vpc" {
-  source  = "github.com/KoeSystems/tf_aws_vpc"
+  source  = "github.com/KoeSystems/terraform-aws-vpc"
   name    = "vpc01"
   ipv6_cidr_block = true
 }
 ```
-
-Outputs
-=======
-
-- `ipv4_cidr_block`
-- `ipv6_cidr_block`
-- `domain_name`
-- `nat_ids`
-- `nat_private_ips`
-- `nat_public_ips`
-- `subnets_private_ids`
-- `subnets_private_cidr_block`
-- `subnets_public_ids`
-- `subnets_public_cidr_block`
-- `rtb_private_ids`
-- `rtb_public_ids`
-- `route_private_rtb_ids`
-- `route_public_rtb_ids`
-- `secondary_public_zone_id`
 
 Costs
 =====
