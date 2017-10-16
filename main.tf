@@ -3,10 +3,6 @@
 ################################################################################
 data "aws_availability_zones" "available" {}
 data "aws_region" "current" { current = true }
-data "aws_route53_zone" "public" {
-  name         = "${var.domain_name}"
-  private_zone = false
-}
 
 ################################################################################
 # VPC
@@ -483,7 +479,7 @@ resource "aws_route53_zone" "secondary_public" {
 }
 
 resource "aws_route53_record" "NS" {
-  zone_id = "${data.aws_route53_zone.public.zone_id}"
+  zone_id = "${var.domain_ID}"
   name    = "${element(aws_route53_zone.secondary_public.*.name, 0)}"
   type    = "NS"
   ttl     = "30"

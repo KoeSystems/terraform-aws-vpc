@@ -1,5 +1,6 @@
 variable "name"                 {                                       description = "AWS VPC name. This would be used as prefix in all the resources to support multiple VPCs."}
 variable "domain_name"          {                                       description = "AWS Route53 hosted zone name to be attached to the VPC." }
+variable "domain_ID"            {                                       description = "AWS Route53 hosted zone ID to be attached to the VPC." }
 variable "cidr_block"           { default     = "10.0.0.0/16"           description = "CIDR block assigned to the VPC." }
 variable "ipv6_cidr_block"      { default     = false                   description = "Enable IPv6." }
 variable "ipv6_private_egress"  { default     = false                   description = "Enable IPv6 Egress Gateway for private subnets." }
