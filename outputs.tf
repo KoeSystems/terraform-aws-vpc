@@ -1,4 +1,5 @@
-output "AZs"                          { value = "${var.AZs}"                                              description = "Number of AZs used in the VPC." }
+output "AZs"                          { value = "${var.AZs}"                                              description = "List of AZs used in the VPC." }
+output "AZs_number"                   { value = "${length(split(",",var.AZs))}"                           description = "Number of AZs used in the VPC." }
 output "vpc_id"                       { value = "${aws_vpc.mod.id}"                                       description = "VPC unique ID." }
 output "vpc_name"                     { value = "${var.name}"                                             description = "VPC name." }
 output "ipv4_cidr_block"              { value = "${aws_vpc.mod.cidr_block}"                               description = "IPv4 assigned to the VPC." }
