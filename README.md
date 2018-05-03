@@ -2,6 +2,9 @@ VPC terraform module
 ===========
 
 [![GitHub release](https://img.shields.io/github/release/KoeSystems/terraform-aws-vpc.svg?style=plastic)](https://github.com/KoeSystems/terraform-aws-vpc/releases/latest)
+[![Terraform version](https://img.shields.io/badge/terraform-0.11.x-brightgreen.svg?style=plastic)](https://github.com/hashicorp/terraform/blob/v0.11.7/CHANGELOG.md)
+[![Terraform version](https://img.shields.io/badge/terraform-0.10.x-brightgreen.svg?style=plastic)](https://github.com/hashicorp/terraform/blob/v0.10.8/CHANGELOG.md)
+[![Terraform version](https://img.shields.io/badge/terraform-0.9.x-yellowgreen.svg?style=plastic)](https://github.com/hashicorp/terraform/blob/v0.9.11/CHANGELOG.md)
 [![GitHub license](https://img.shields.io/github/license/KoeSystems/terraform-aws-vpc.svg?style=plastic)](https://github.com/KoeSystems/terraform-aws-vpc/blob/master/LICENSE)
 
 A terraform module to create an AWS VPC.
