@@ -1,6 +1,9 @@
 VPC terraform module
 ===========
 
+[![GitHub release](https://img.shields.io/github/release/KoeSystems/terraform-aws-vpc.svg?style=plastic)](https://github.com/KoeSystems/terraform-aws-vpc/releases/latest)
+[![GitHub license](https://img.shields.io/github/license/KoeSystems/terraform-aws-vpc.svg?style=plastic)](https://github.com/KoeSystems/terraform-aws-vpc/blob/master/LICENSE)
+
 A terraform module to create an AWS VPC.
 
 For security reasons:
