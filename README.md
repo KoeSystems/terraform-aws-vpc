@@ -30,6 +30,8 @@ Module Input Variables
 - `enable_vpc_flow_logs` - Enable AWS VPC Flow Logs for this VPC. Default value `false`.
 - `enable_nat_gw` - Create one NAT Gateway for each AZs. Default value `true`.
 - `allow_all_ACL` - Add generic ACL rules to allow ALL traffic.
+- `only_public` - Create only public subnets, not private subnets.
+
 
 Caveats
 ----------------------
@@ -40,7 +42,7 @@ Usage examples
 
 ```js
 module "vpc" {
-  source  = "github.com/KoeSystems/terraform-aws-vpc?ref=v0.1.1"
+  source  = "github.com/KoeSystems/terraform-aws-vpc?ref=v0.5.0"
   name    = "vpc01"
 }
 ```
@@ -60,6 +62,23 @@ module "vpc" {
   source  = "github.com/KoeSystems/terraform-aws-vpc"
   name    = "vpc01"
   ipv6_cidr_block = true
+}
+```
+
+Production ready VPC
+```js
+module "vpc" {
+  source               = "github.com/KoeSystems/terraform-aws-vpc?ref=v0.5.0"
+  name                 = "vpc01"
+  AZs                  = "a,b,c"
+  cidr_block           = "10.0.0.0/16"
+  only_public          = false
+  enable_nat_gw        = true
+  allow_all_ACL        = true
+  enable_vpc_flow_logs = true
+  domain_name          = "vpc01.example.com"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 }
 ```
 
