@@ -2,7 +2,7 @@
 # Data
 ################################################################################
 data "aws_availability_zones" "available" {}
-data "aws_region" "current" { current = true }
+data "aws_region" "current" { }
 
 ################################################################################
 # VPC
@@ -24,17 +24,21 @@ resource "aws_vpc" "mod" {
 # DHCP Options
 ################################################################################
 resource "aws_vpc_dhcp_options" "mod" {
-  domain_name         = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
-  domain_name_servers = "${var.domain_name_servers}"
+  domain_name         = "${var.name}.${var.domain_name}"
+  domain_name_servers = [ "AmazonProvidedDNS" ]
   
   tags {
-    Name = "${var.name}"
+    Name = "${var.name}.${var.domain_name}"
   }
+
+  count  = "${var.domain_name == "" ? 0 : 1}"
 }
 
 resource "aws_vpc_dhcp_options_association" "mod" {
   vpc_id          = "${aws_vpc.mod.id}"
   dhcp_options_id = "${aws_vpc_dhcp_options.mod.id}"
+
+  count  = "${var.domain_name == "" ? 0 : 1}"
 }
 
 ################################################################################
@@ -90,7 +94,7 @@ resource "aws_subnet" "private" {
   cidr_block              = "${cidrsubnet(aws_vpc.mod.cidr_block, 8, 40 + count.index)}"
   map_public_ip_on_launch = false
   availability_zone       = "${element(sort(data.aws_availability_zones.available.names), count.index)}"
-  count                   = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 0 : 1) }"
+  count                   = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 0 : 1) * (var.only_public ? 0 : 1) }"
 
   tags {
     Name = "${var.name}-private-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
@@ -119,7 +123,7 @@ resource "aws_subnet" "private_ipv6" {
   ipv6_cidr_block         = "${var.ipv6_cidr_block ? cidrsubnet(aws_vpc.mod.ipv6_cidr_block, 8, 40 + count.index) : "" }"
   map_public_ip_on_launch = false
   availability_zone       = "${element(sort(data.aws_availability_zones.available.names), count.index)}"
-  count                   = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 1 : 0) }"
+  count                   = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 
   tags {
     Name = "${var.name}-private-${substr(element(sort(data.aws_availability_zones.available.names), count.index),-1,1)}"
@@ -140,7 +144,7 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table" "private" {
   vpc_id = "${aws_vpc.mod.id}"
-  count  = "${ length(split(",",var.AZs)) }"
+  count  = "${ length(split(",",var.AZs)) * (var.only_public ? 0 : 1) }"
   
   tags {
     Name = "${var.name}-private-${substr(element(data.aws_availability_zones.available.names, count.index),-1,1)}"
@@ -166,7 +170,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_route_table_association" "private" {
   subnet_id      = "${element(aws_subnet.private.*.id, count.index)}"
   route_table_id = "${element(aws_route_table.private.*.id, count.index)}"
-  count          = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 0 : 1) }"
+  count          = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 0 : 1) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_route" "public" {
@@ -180,7 +184,7 @@ resource "aws_route" "private" {
   route_table_id         = "${element(aws_route_table.private.*.id, count.index)}"
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = "${element(aws_nat_gateway.mod.*.id, count.index)}"
-  count                  = "${(var.ipv6_cidr_block ? 0 : 1) * (var.enable_nat_gw ? length(split(",",var.AZs)) : 0)}"
+  count                  = "${ (var.ipv6_cidr_block ? 0 : 1) * (var.enable_nat_gw ? length(split(",",var.AZs)) : 0) * (var.only_public ? 0 : 1) }"
 }
 
 ################################################################################
@@ -195,7 +199,7 @@ resource "aws_route_table_association" "public_ipv6" {
 resource "aws_route_table_association" "private_ipv6" {
   subnet_id      = "${element(aws_subnet.private_ipv6.*.id, count.index)}"
   route_table_id = "${element(aws_route_table.private.*.id, count.index)}"
-  count          = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 1 : 0) }"
+  count          = "${ length(split(",",var.AZs)) * (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_route" "public_ipv4" {
@@ -216,14 +220,14 @@ resource "aws_route" "private_ipv4" {
   route_table_id         = "${element(aws_route_table.private.*.id, count.index)}"
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = "${element(aws_nat_gateway.mod.*.id, count.index)}"
-  count                  = "${(var.ipv6_cidr_block ? 1 : 0) * (var.enable_nat_gw ? length(split(",",var.AZs)) : 0)}"
+  count                  = "${ (var.ipv6_cidr_block ? 1 : 0) * (var.enable_nat_gw ? length(split(",",var.AZs)) : 0) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_route" "private_ipv6_egress" {
   route_table_id              = "${element(aws_route_table.private.*.id, count.index)}"
   destination_ipv6_cidr_block = "::/0"
   egress_only_gateway_id      = "${aws_egress_only_internet_gateway.mod.id}"
-  count                       = "${ length(split(",",var.AZs)) * (var.ipv6_private_egress ? 1 : 0) }"
+  count                       = "${ length(split(",",var.AZs)) * (var.ipv6_private_egress ? 1 : 0) * (var.only_public ? 0 : 1) }"
 }
 
 ################################################################################
@@ -266,7 +270,7 @@ resource "aws_network_acl_rule" "public_egress" {
 resource "aws_network_acl" "private" {
   vpc_id     = "${aws_vpc.mod.id}"
   subnet_ids = [ "${aws_subnet.private.*.id}" ]
-  count      = "${var.ipv6_cidr_block ? 0 : 1}"
+  count      = "${ (var.ipv6_cidr_block ? 0 : 1) * (var.only_public ? 0 : 1) }"
 
   tags {
     Name = "${var.name}-private"
@@ -282,7 +286,7 @@ resource "aws_network_acl_rule" "private_ingress" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
-  count          = "${var.allow_all_ACL * (var.ipv6_cidr_block ? 0 : 1)}"
+  count          = "${ var.allow_all_ACL * (var.ipv6_cidr_block ? 0 : 1) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_network_acl_rule" "private_egress" {
@@ -294,7 +298,7 @@ resource "aws_network_acl_rule" "private_egress" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
-  count          = "${var.allow_all_ACL * (var.ipv6_cidr_block ? 0 : 1)}"
+  count          = "${ var.allow_all_ACL * (var.ipv6_cidr_block ? 0 : 1) * (var.only_public ? 0 : 1) }"
 }
 
 
@@ -362,7 +366,7 @@ resource "aws_network_acl_rule" "public_egress_ipv6" {
 resource "aws_network_acl" "private_ipv6" {
   vpc_id     = "${aws_vpc.mod.id}"
   subnet_ids = [ "${aws_subnet.private_ipv6.*.id}" ]
-  count      = "${var.ipv6_cidr_block ? 1 : 0}"
+  count      = "${ (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 
   tags {
     Name = "${var.name}-private"
@@ -378,7 +382,7 @@ resource "aws_network_acl_rule" "private_ingress_ipv4" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
-  count          = "${var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0)}"
+  count          = "${ var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_network_acl_rule" "private_ingress_ipv6" {
@@ -390,7 +394,7 @@ resource "aws_network_acl_rule" "private_ingress_ipv6" {
   ipv6_cidr_block = "::/0"
   from_port       = 0
   to_port         = 0
-  count           = "${var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0)}"
+  count           = "${ var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_network_acl_rule" "private_egress_ipv4" {
@@ -402,7 +406,7 @@ resource "aws_network_acl_rule" "private_egress_ipv4" {
   cidr_block     = "0.0.0.0/0"
   from_port      = 0
   to_port        = 0
-  count          = "${var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0)}"
+  count          = "${ var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_network_acl_rule" "private_egress_ipv6" {
@@ -414,7 +418,7 @@ resource "aws_network_acl_rule" "private_egress_ipv6" {
   ipv6_cidr_block = "::/0"
   from_port       = 0
   to_port         = 0
-  count           = "${var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0)}"
+  count           = "${ var.allow_all_ACL * (var.ipv6_cidr_block ? 1 : 0) * (var.only_public ? 0 : 1) }"
 }
 
 resource "aws_default_network_acl" "default" {
@@ -435,7 +439,7 @@ resource "aws_default_security_group" "default" {
 }
 
 ################################################################################
-# FLow Logs
+# Flow Logs
 ################################################################################
 resource "aws_cloudwatch_log_group" "vpc" {
   name              = "/aws/vpc/${var.name}-flow-logs"
@@ -462,32 +466,4 @@ resource "aws_flow_log" "mod" {
   iam_role_arn   = "${aws_iam_role.flow_logs.arn}"
   traffic_type   = "ALL"
   count          = "${var.enable_vpc_flow_logs ? 1 : 0}"
-}
-
-################################################################################
-# Route53 Private Hosted Zone
-################################################################################
-resource "aws_route53_zone" "secondary_private" {
-  comment = "Private zone for ${var.name} in ${data.aws_region.current.name} under ${var.domain_name}."
-  name    = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
-  vpc_id  = "${aws_vpc.mod.id}"
-}
-
-resource "aws_route53_zone" "secondary_public" {
-  comment = "Public zone for ${var.name} in ${data.aws_region.current.name} under ${var.domain_name}."
-  name    = "${var.name}.${data.aws_region.current.name}.${var.domain_name}"
-}
-
-resource "aws_route53_record" "NS" {
-  zone_id = "${var.domain_ID}"
-  name    = "${element(aws_route53_zone.secondary_public.*.name, 0)}"
-  type    = "NS"
-  ttl     = "30"
-  records = [
-    "${aws_route53_zone.secondary_public.name_servers.0}",
-    "${aws_route53_zone.secondary_public.name_servers.1}",
-    "${aws_route53_zone.secondary_public.name_servers.2}",
-    "${aws_route53_zone.secondary_public.name_servers.3}"
-  ]
-  depends_on = [ "aws_route53_zone.secondary_public" ]
 }
